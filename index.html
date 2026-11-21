@@ -258,8 +258,7 @@ function saveEx(){var id=window._eid,c=id?S.custom.find(function(x){return x.id=
 function delEx(id){confirm2('Xoá bài này? Lịch sử cũ vẫn giữ.',function(){S.custom=S.custom.filter(function(e){return e.id!==id});save();modal('');render()})}
 
 // ===== PROGRESS =====
-function vProg(){var h='<h1>Progress</h1><div class="seg"><button class="chip'+(pSeg==='hist'?' on':'')+'" onclick="setSeg(\'hist\')">Lịch sử tập</button><button class="chip'+(pSeg==='body'?' on':'')+'" onclick="setSeg(\'body\')">InBody</button></div>';
-  app(h+(pSeg==='hist'?histHtml():bodyHtml()))}
+function vProg(){app('<h1>Progress</h1>'+histHtml())}
 function setSeg(s){pSeg=s;render()}
 function calMove(d){calM=new Date(calM.getFullYear(),calM.getMonth()+d,1);render()}
 function calPick(d){calSel=d;render()}
@@ -339,8 +338,8 @@ function delBody(id){confirm2('Xoá bản ghi này?',function(){S.body=S.body.fi
 
 // ===== PROFILE =====
 function vProf(){app('<h1>Profile</h1><div class="card"><label style="margin-top:0">Tên</label><input value="'+esc(S.name)+'" onchange="S.name=this.value;save()" placeholder="Tên của bạn"></div>'+
-  '<div class="card"><h3>Sao lưu dữ liệu</h3><div class="mut">Sao chép bản sao lưu để dán vào máy khác. Video, ảnh InBody và ảnh bìa không nằm trong bản sao lưu.</div><div class="row" style="margin-top:10px"><button class="b g" style="flex:1" onclick="exp()">Xuất</button><button class="b g" style="flex:1" onclick="imp()">Nhập</button></div></div>'+
-  '<div class="card"><h3>Về app</h3><div class="mut">Dữ liệu lưu ngay trên điện thoại này, không có quảng cáo. '+S.sessions.length+' buổi tập đã lưu.</div><div class="mut" style="margin-top:6px">Phiên bản app: <b>v7 · 21/11 22:45</b></div><div style="margin-top:10px">Exercise data by <a href="https://repdb.co" target="_blank" rel="noopener nofollow">RepDB (repdb.co)</a></div></div>')}
+  '<div class="card"><h3>Sao lưu dữ liệu</h3><div class="mut">Sao chép bản sao lưu để dán vào máy khác. Video và ảnh bìa không nằm trong bản sao lưu.</div><div class="row" style="margin-top:10px"><button class="b g" style="flex:1" onclick="exp()">Xuất</button><button class="b g" style="flex:1" onclick="imp()">Nhập</button></div></div>'+
+  '<div class="card"><h3>Về app</h3><div class="mut">Dữ liệu lưu ngay trên điện thoại này, không có quảng cáo. '+S.sessions.length+' buổi tập đã lưu.</div><div class="mut" style="margin-top:6px">Phiên bản app: <b>v8 · 21/11 22:55</b></div><div style="margin-top:10px">Exercise data by <a href="https://repdb.co" target="_blank" rel="noopener nofollow">RepDB (repdb.co)</a></div></div>')}
 function exp(){var t=JSON.stringify({custom:S.custom,ov:S.ov,sessions:S.sessions,notes:S.notes,body:S.body,name:S.name});modal('<div class="row sp"><h3>Xuất dữ liệu</h3><button class="b g s" onclick="modal(\'\')">Đóng</button></div><textarea id="bx" rows="8" readonly>'+esc(t)+'</textarea><button class="b w" style="margin-top:10px" onclick="cp()">Sao chép</button>')}
 function cp(){var t=document.getElementById('bx');t.select();try{navigator.clipboard.writeText(t.value)}catch(e){document.execCommand('copy')}}
 function imp(){modal('<div class="row sp"><h3>Nhập dữ liệu</h3><button class="b g s" onclick="modal(\'\')">Đóng</button></div><textarea id="bx" rows="8" placeholder="Dán bản sao lưu vào đây"></textarea><button class="b w" style="margin-top:10px" onclick="doImp()">Nhập (thay thế dữ liệu hiện tại)</button>')}
