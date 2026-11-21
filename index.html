@@ -148,17 +148,21 @@ document.addEventListener('focusout',function(){setTimeout(function(){var a=docu
 // ===== Gợi ý bài tập từ lịch sử =====
 function gStats(){var st={},t=ymd();Object.keys(WK).forEach(function(g){st[g]={days:99,c7:0}});
   S.sessions.forEach(function(s){var d=dayDiff(s.date,t);(s.groups||[]).forEach(function(g){if(!st[g])return;if(d<st[g].days)st[g].days=d;if(d>=0&&d<7)st[g].c7++})});return st}
-function suggest(){var st=gStats(),all=Object.keys(WK);
-  function score(g){return (WK[g]-st[g].c7)*3+Math.min(st[g].days,14)*1.5}
-  function desc(g){var o=st[g];return g+(o.days>=99?' (chưa tập)':o.days===0?' (đã tập hôm nay)':' ('+o.days+' ngày trước)')}
-  var elig=all.filter(function(g){return st[g].days>=REC[g]});if(!elig.length)elig=all.slice();
-  var prim=elig.filter(function(g){return SECOND_ONLY.indexOf(g)<0});if(!prim.length)prim=elig;
-  prim.sort(function(a,b){return score(b)-score(a)});var a=prim[0],b=null;
-  var pr=(PARTNER[a]||[]).filter(function(g){return elig.indexOf(g)>=0}).sort(function(x,y){return score(y)-score(x)});
-  if(pr.length)b=pr[0];else{var rest=elig.filter(function(g){return g!==a&&SECOND_ONLY.indexOf(g)<0}).sort(function(x,y){return score(y)-score(x)});b=rest[0]||null}
-  var gs=b?[a,b]:[a],items=[];
-  gs.forEach(function(g){exGroup(g).filter(function(e){return e.role==='main'}).slice(0,3).forEach(function(e){items.push(mkItem(e.id,g))})});
-  return{groups:gs,items:items,why:gs.map(desc).join(' + ')}}
+var SCHED={1:['Ngực','Tay sau'],3:['Lưng','Tay trước'],6:['Chân','Bụng'],0:['Vai','Cẳng tay']};
+function daysTxt(st,g){var d=st[g].days;return g+(d>=99?' (chưa tập)':d===0?' (đã tập hôm nay)':' ('+d+' ngày trước)')}
+function suggest(){var st=gStats(),dw=new Date().getDay(),gs=SCHED[dw],why;
+  if(gs)why='Lịch '+DOW[dw]+': '+gs.map(function(g){return daysTxt(st,g)}).join(' + ');
+  else{var best=null,bs=-1;Object.keys(SCHED).forEach(function(k){var p=SCHED[k],sc=p.reduce(function(a,g){return a+Math.min(st[g].days,14)},0)/p.length;if(sc>bs){bs=sc;best=p}});gs=best;why='Hôm nay ngoài lịch gym ('+DOW[dw]+'). Gợi ý cặp lâu chưa tập: '+gs.map(function(g){return daysTxt(st,g)}).join(' + ')}
+  var items=[];gs.forEach(function(g){exGroup(g).filter(function(e){return e.role==='main'}).slice(0,3).forEach(function(e){items.push(mkItem(e.id,g))})});
+  return{groups:gs.slice(),items:items,why:why}}
+function changeGroup(old){var A=S.active,st=gStats(),cur=A.items.map(function(i){return i.g});
+  var opts=GROUPS.filter(function(g){return cur.indexOf(g)<0&&exGroup(g).length}).sort(function(a,b){return st[b].days-st[a].days});
+  modal('<div class="row sp"><h3>Đổi nhóm '+old+' sang…</h3><button class="b g s" onclick="modal(\'\')">Đóng</button></div><div class="mut" style="margin-bottom:8px">Nhóm lâu chưa tập được xếp lên đầu. Các bài đã check của nhóm '+old+' sẽ bị bỏ khỏi buổi tập.</div>'+opts.map(function(g){return '<div class="card" style="margin:0 0 10px" onclick="doChange(\''+old+'\',\''+g+'\')"><div class="row sp"><b>'+g+'</b><span class="mut">'+(st[g].days>=99?'chưa tập':st[g].days===0?'đã tập hôm nay':st[g].days+' ngày trước')+'</span></div></div>'}).join(''))}
+function doChange(old,g){var A=S.active,pos=A.items.findIndex(function(i){return i.g===old});if(pos<0)pos=A.items.length;
+  A.items=A.items.filter(function(i){return i.g!==old});
+  var ni=exGroup(g).filter(function(e){return e.role==='main'}).slice(0,3).map(function(e){return mkItem(e.id,g)});
+  A.items.splice.apply(A.items,[pos,0].concat(ni));
+  var gs=[];A.items.forEach(function(i){if(gs.indexOf(i.g)<0)gs.push(i.g)});A.groups=gs;A.why='Đã đổi '+old+' sang '+g+' (máy bận).';save();modal('');render()}
 function mkItem(id,g){var l=lastVals(id);return{id:id,g:g,kg:l?l.kg:20,reps:l?l.reps:12,sets:l?l.sets:3,done:false,tried:[]}}
 function swapOne(i){var A=S.active,it=A.items[i],cur=it.id;var inPlan=A.items.map(function(x){return x.id});
   var pool=exGroup(it.g).filter(function(e){return inPlan.indexOf(e.id)<0});
@@ -193,7 +197,7 @@ function vHome(){var A=S.active,h='<h1>'+(A?'Đang tập':'Hôm nay')+'</h1>';
     return app(h)}
   h+='<div class="hero" style="padding:18px 22px"><div class="mut" style="color:#b9bfcc">Bắt đầu '+hm(A.start)+' · '+A.groups.join(' + ')+'</div><div class="big" id="tm" style="margin-top:6px">'+hms((Date.now()-A.start)/1000)+'</div></div>';
   if(A.why)h+='<div class="pad mut" style="margin-bottom:12px">Gợi ý: '+esc(A.why)+'</div>';
-  var cur='';A.items.forEach(function(it,i){if(it.g!==cur){cur=it.g;h+='<div class="sec" style="margin-top:6px">'+cur+'</div>'}h+=exRow(it,i)});
+  var cur='';A.items.forEach(function(it,i){if(it.g!==cur){cur=it.g;h+='<div class="sec" style="margin-top:6px;display:flex;justify-content:space-between;align-items:center"><span>'+cur+'</span><button class="b g s" onclick="changeGroup(\''+cur+'\')">Change</button></div>'}h+=exRow(it,i)});
   h+='<div class="pad"><button class="b g w" onclick="addPick()">＋ Thêm bài</button><button class="b l w" style="margin-top:12px;font-size:19px" onclick="finishOpen()">Kết thúc buổi tập</button><button class="b d w" style="margin-top:12px" onclick="cancelActive()">Huỷ buổi tập</button></div>';
   app(h);window._tv=setInterval(function(){var e=document.getElementById('tm');if(e&&S.active)e.textContent=hms((Date.now()-S.active.start)/1000)},1000)}
 
